@@ -1,7 +1,7 @@
 DEEP Open Catalogue: Image classification
 =========================================
 
-[![Build Status](https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/image-classification-tf/master)](https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/image-classification-tf/job/master/)
+[![Build Status](https://jenkins.services.ai4os.eu/buildStatus/icon?job=AI4OS-hub/ai4os-image-classification-tf/main)](https://jenkins.services.ai4os.eu/job/AI4OS-hub/job/ai4os-image-classification-tf/job/main//)
 
 
 **Author:** [Ignacio Heredia](https://github.com/IgnacioHeredia) (CSIC)
@@ -44,7 +44,7 @@ To start using this framework clone the repo and download the [default weights](
 ```bash
 # First line installs OpenCV requirement
 apt-get update && apt-get install -y libgl1
-git clone https://github.com/deephdc/image-classification-tf
+git clone https://github.com/ai4os-hub/ai4os-image-classification-tf
 cd image-classification-tf
 pip install -e .
 curl -o ./models/default_imagenet.tar.xz https://api.cloud.ifca.es:8080/swift/v1/imagenet-tf/default_imagenet.tar.xz
@@ -58,12 +58,12 @@ and open http://0.0.0.0:5000/ui and look for the methods belonging to the `imgcl
 
 ### Docker installation
 
-We have also prepared a ready-to-use [Docker container](https://github.com/deephdc/DEEP-OC-image-classification-tf) to
+We have also prepared a ready-to-use [Docker container](https://github.com/ai4os-hub/ai4os-image-classification-tf) to
 run this module. To run it:
 
 ```bash
 docker search deephdc
-docker run -ti -p 5000:5000 -p 6006:6006 -p 8888:8888 deephdc/deep-oc-image-classification-tf
+docker run -ti -p 5000:5000 -p 6006:6006 -p 8888:8888 ai4oshub/ai4os-image-classification-tf
 ```
 
 Now open http://0.0.0.0:5000/ui and look for the methods belonging to the `imgclas` module.

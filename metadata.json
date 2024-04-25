@@ -16,7 +16,7 @@
         "The PREDICT method expects an RGB image as input (or the url of an RGB image) and will return a JSON with ",
         "the top 5 predictions.\n",
 
-        "<img class='fit', src='https://raw.githubusercontent.com/deephdc/DEEP-OC-image-classification-tf/master/images/imagenet.png'/>\n",
+        "<img class='fit', src='https://raw.githubusercontent.com/ai4oshub/ai4os-image-classification-tf/master/images/imagenet.png'/>\n",
 
         "**References**\n",
         "[1]: Yann LeCun, Yoshua Bengio, and Geofrey Hinton. [Deep learning](https://www.cs.toronto.edu/~hinton/absps/NatureDeepReview.pdf). Nature, 521(7553):436-444, May 2015.\n",
@@ -31,13 +31,13 @@
     "dataset_url": "http://www.image-net.org/challenges/LSVRC/",
     "cite_url": "http://digital.csic.es/handle/10261/194498",
     "sources": {
-		"dockerfile_repo": "https://github.com/deephdc/DEEP-OC-image-classification-tf",
-		"docker_registry_repo": "deephdc/deep-oc-image-classification-tf",
-		"code": "https://github.com/deephdc/image-classification-tf"
+		"dockerfile_repo": "https://github.com/ai4os-hub/ai4os-image-classification-tf",
+		"docker_registry_repo": "ai4oshub/ai4os-image-classification-tf",
+		"code": "https://github.com/ai4os-hub/ai4os-image-classification-tf"
 	},
     "continuous_integration": {
-        "build_status_badge": "https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/DEEP-OC-image-classification-tf/master",
-        "build_status_url": "https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/DEEP-OC-image-classification-tf/job/master"
+        "build_status_badge": "https://jenkins.services.ai4os.eu/buildStatus/icon?job=AI4OS-hub/ai4os-image-classification-tf/main",
+        "build_status_url": "https://jenkins.services.ai4os.eu/job/AI4OS-hub/job/ai4os-image-classification-tf/job/main/"
     },
     "tosca": [
         {
