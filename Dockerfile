@@ -71,7 +71,7 @@ RUN git clone https://github.com/ai4os/deep-start /srv/.deep-start && \
 RUN apt-get update && apt-get install -y libgl1
 
 # Install user app:
-RUN git clone -b $branch https://github.com/ai4os-hub/ai4os-ai4os-image-classification-tf && \
+RUN git clone -b $branch https://github.com/ai4os-hub/ai4os-image-classification-tf && \
     cd ai4os-image-classification-tf && \
     pip install --no-cache-dir -e . && \
     rm -rf /root/.cache/pip/* && \
