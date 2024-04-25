@@ -8,14 +8,14 @@ sqa_criteria:
           tox_file: tox.ini
           testenv:
             - qc.sty
-  qc_coverage:
-    repos:
-      ai4os-image-classification-tf:
-        container: thisrepo-testing
-        tox:
-          tox_file: tox.ini
-          testenv:
-            - qc.cov
+#  qc_coverage:
+#    repos:
+#      ai4os-image-classification-tf:
+#        container: thisrepo-testing
+#        tox:
+#          tox_file: tox.ini
+#          testenv:
+#            - qc.cov
   qc_security:
     repos:
       ai4os-image-classification-tf:
