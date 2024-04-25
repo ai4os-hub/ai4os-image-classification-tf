@@ -33,7 +33,8 @@
     "sources": {
 		"dockerfile_repo": "https://github.com/ai4os-hub/ai4os-image-classification-tf",
 		"docker_registry_repo": "ai4oshub/ai4os-image-classification-tf",
-		"code": "https://github.com/ai4os-hub/ai4os-image-classification-tf"
+		"code": "https://github.com/ai4os-hub/ai4os-image-classification-tf",
+		"ai4_template": "ai4-template/1.9.9"
 	},
     "continuous_integration": {
         "build_status_badge": "https://jenkins.services.ai4os.eu/buildStatus/icon?job=AI4OS-hub/ai4os-image-classification-tf/main",
