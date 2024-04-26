@@ -20,7 +20,8 @@ pipeline {
         always {
             // file locations are defined in tox.ini
             // publish results of the style analysis
-            recordIssues(tools: [flake8(pattern: 'flake8.log',
+            recordIssues(enabledForFailure: true,
+                         tools: [flake8(pattern: 'flake8.log',
                                  name: 'PEP8 report',
                                  id: "flake8_pylint")])
             // publish results of the coverage test
@@ -41,7 +42,7 @@ pipeline {
                          reportTitles: ''])
             // Clean after build
             cleanWs()
-        }    
+        }
     }
 }
 

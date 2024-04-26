@@ -5,10 +5,10 @@ import groovy.transform.Field
 // dockerfile : what Dockerfile to use for building, can include path, e.g. docker/Dockerfile
 
 @Field
-def base_cpu_tag = ''
+def base_cpu_tag = '1.14.0-py3'
 
 @Field
-def base_gpu_tag = ''
+def base_gpu_tag = '1.14.0-gpu-py3'
 
 @Field
 def dockerfile = 'Dockerfile'

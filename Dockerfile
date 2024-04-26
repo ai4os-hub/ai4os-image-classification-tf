@@ -1,5 +1,5 @@
 # Dockerfile may have two Arguments: tag, branch
-# tag - tag for the Base image, (e.g. 1.10.0-py3 for tensorflow)
+# tag - tag for the Base image, (e.g. 1.14.0-py3 for tensorflow)
 # branch - user repository branch to clone (default: main, other option: test)
 
 ARG tag=1.14.0-py3
@@ -14,7 +14,16 @@ ENV CONTAINER_DESCRIPTION "DEEP as a Service Container: Image Classification"
 
 # What user branch to clone (!)
 ARG branch=main
+ARG tag
 
+ENV SHELL /bin/bash
+
+# 2024: need to re-add GPG keys for Nvidia repos but only in the case of GPU images
+# Note for GPU build: see https://askubuntu.com/questions/1444943/nvidia-gpg-error-the-following-signatures-couldnt-be-verified-because-the-publi
+RUN if [[ "$tag" =~ "-gpu" ]]; then \
+    apt-key del 7fa2af80 ; \
+    curl https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub | apt-key add - ; \
+    curl https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub | apt-key add - ; fi
 # Install ubuntu updates and python related stuff
 # link python3 to python, pip3 to pip, if needed
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
@@ -59,8 +68,6 @@ ENV DISABLE_AUTHENTICATION_AND_ASSUME_AUTHENTICATED_USER yes
 RUN pip install --no-cache-dir entry_point_inspector && \
     rm -rf /root/.cache/pip/* && \
     rm -rf /tmp/*
-
-ENV SHELL /bin/bash
 
 # Initialization scripts
 # deep-start can install JupyterLab or VSCode if requested
