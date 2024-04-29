@@ -16,7 +16,7 @@
         "The PREDICT method expects an RGB image as input (or the url of an RGB image) and will return a JSON with ",
         "the top 5 predictions.\n",
 
-        "<img class='fit', src='https://raw.githubusercontent.com/ai4oshub/ai4os-image-classification-tf/master/images/imagenet.png'/>\n",
+        "<img class='fit', src='https://raw.githubusercontent.com/ai4os-hub/ai4os-image-classification-tf/main/docs/images/imagenet.png'/>\n",
 
         "**References**\n",
         "[1]: Yann LeCun, Yoshua Bengio, and Geofrey Hinton. [Deep learning](https://www.cs.toronto.edu/~hinton/absps/NatureDeepReview.pdf). Nature, 521(7553):436-444, May 2015.\n",
