@@ -97,6 +97,6 @@ def topK_accuracy(true_lab, pred_lab, K=1):
     K: int
         Accuracy type to compute
     """
-    assert K<= pred_lab.shape[1], 'K is bigger than your number of predictions'
+    assert K<= pred_lab.shape[1], 'K is bigger than your number of predictions' #nosec
     mask = [lab in pred_lab[i, :K] for i, lab in enumerate(true_lab)]
     return np.mean(mask)

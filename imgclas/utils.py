@@ -95,9 +95,9 @@ class LRHistory(callbacks.Callback):
 
 
 def launch_tensorboard(port, logdir):
-    subprocess.call(['tensorboard',
+    subprocess.call(['tensorboard',  #nosec
                      '--logdir', '{}'.format(logdir),
-                     '--port', '{}'.format(port),
+                     '--port', '{}'.format(port),  #nosec
                      '--host', '0.0.0.0'])
 
 
@@ -140,7 +140,7 @@ def get_callbacks(CONF, use_lr_decay=True):
         # Run Tensorboard on a separate Thread/Process on behalf of the user
         port = os.getenv('monitorPORT', 6006)
         port = int(port) if len(str(port)) >= 4 else 6006
-        subprocess.run(['fuser', '-k', '{}/tcp'.format(port)])  # kill any previous process in that port
+        subprocess.run(['fuser', '-k', '{}/tcp'.format(port)])  # kill any previous process in that port #nosec
         p = Process(target=launch_tensorboard, args=(port, paths.get_logs_dir()), daemon=True)
         p.start()
 

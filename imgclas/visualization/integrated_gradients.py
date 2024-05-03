@@ -30,7 +30,7 @@ class IntegratedGradients(GradientSaliency):
         if input_baseline == None:
             input_baseline = np.zeros_like(input_image)
 
-        assert input_baseline.shape == input_image.shape
+        assert input_baseline.shape == input_image.shape #nosec
 
         input_diff = input_image - input_baseline
 
