@@ -11,6 +11,7 @@
 Sphinx~=4.3.0
 python-dotenv~=0.19.2
 numpy~=1.16.4
+tensorflow~=1.14.0
 tensorboardX~=2.4.1
 opencv-python~=4.5.4.60
 albumentations~=0.1.8
