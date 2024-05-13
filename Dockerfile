@@ -37,12 +37,13 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
          python3-wheel && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
+    rm -rf /tmp/*
+
+RUN pip3 install --upgrade pip setuptools wheel && \
     rm -rf /root/.cache/pip/* && \
-    rm -rf /tmp/* && \
     python --version && \
     pip --version
 
-RUN pip install --upgrade pip setuptools wheel
 
 # Set LANG environment
 ENV LANG C.UTF-8
