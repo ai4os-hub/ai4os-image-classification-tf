@@ -186,7 +186,7 @@ def catch_error(f):
         try:
             pred = f(*args, **kwargs)
             return {'status': 'OK',
-                    'predictions': pred}
+                    **pred}
         except Exception as e:
             return {'status': 'error',
                     'message': str(e)}
@@ -329,10 +329,10 @@ def format_prediction(labels, probabilities):
 
     pred = {'labels': [class_names[i] for i in labels],
             'probabilities': [float(p) for p in probabilities],
-            'labels_info': [class_info[i] for i in labels],
-            'links': {'Google Images': [image_link(class_names[i]) for i in labels],
-                      'Wikipedia': [wikipedia_link(class_names[i]) for i in labels]
-                      }
+            # 'labels_info': [class_info[i] for i in labels],
+            # 'links': {'Google Images': [image_link(class_names[i]) for i in labels],
+            #           'Wikipedia': [wikipedia_link(class_names[i]) for i in labels]
+            #           }
             }
 
     return pred
@@ -488,9 +488,11 @@ def get_metadata():
 
     return meta
 
-
 schema = {
     "status": fields.Str(),
     "message": fields.Str(),
-    "predictions": fields.Field()
+    "labels": fields.List(fields.Str()),
+    "probabilities": fields.List(fields.Float()),
+    # "labels_info": fields.List(fields.Str()),
+    # "links": fields.Dict(),
 }
