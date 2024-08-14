@@ -1,7 +1,16 @@
 metadata_version: 2.0.0
 title: Train an image classifier
 summary: Train your own image classifier with your custom dataset. It comes also pretrained on the 1K ImageNet classes.
-description: '"The deep learning revolution has brought significant advances in a number of fields [1], primarily linked to" "image and speech recognition. The standardization of image classification tasks like the [ImageNet Large Scale" "Visual Recognition Challenge](http://www.image-net.org/challenges/LSVRC/) [2] has resulted in a reliable way to" "compare top performing architectures.\n" "This Docker container contains the tools to train an image classifier on your personal dataset. It is a highly" "customizable tool  that let''s you choose between tens of different [top performing architectures](https://github.com/keras-team/keras-applications)" "and training parameters.\n" "The container also comes with a pretrained general-purpose image classifier trained on ImageNet.\n" "The PREDICT method expects an RGB image as input (or the url of an RGB image) and will return a JSON with " "the top 5 predictions.\n" "<img class=''fit'', src=''https://raw.githubusercontent.com/ai4os-hub/ai4os-image-classification-tf/main/docs/images/imagenet.png''/>\n" "**References**\n" "[1]: Yann LeCun, Yoshua Bengio, and Geofrey Hinton. [Deep learning](https://www.cs.toronto.edu/~hinton/absps/NatureDeepReview.pdf). Nature, 521(7553):436-444, May 2015.\n" "[2]: Olga Russakovsky et al. [ImageNet Large Scale Visual Recognition Challenge](https://arxiv.org/abs/1409.0575). International Journal of Computer Vision (IJCV), 115(3):211-252, 2015.\n"'
+description: |-
+  The deep learning revolution has brought significant advances in a number of fields [1], primarily linked to image and speech recognition. The standardization of image classification tasks like the [ImageNet Large Scale Visual Recognition Challenge](http://www.image-net.org/challenges/LSVRC/) [2] has resulted in a reliable way to compare top performing architectures. 
+  This Docker container contains the tools to train an image classifier on your personal dataset. It is a highly customizable tool that let's you choose between tens of different [top performing architectures](https://github.com/keras-team/keras-applications) and training parameters. 
+  The container also comes with a pretrained general-purpose image classifier trained on ImageNet. 
+  The PREDICT method expects an RGB image as input (or the url of an RGB image) and will return a JSON with the top 5 predictions.
+  <img class=''fit'', src=''https://raw.githubusercontent.com/ai4os-hub/ai4os-image-classification-tf/main/docs/images/imagenet.png''/>
+  
+  **References**
+  [1]: Yann LeCun, Yoshua Bengio, and Geofrey Hinton. [Deep learning](https://www.cs.toronto.edu/~hinton/absps/NatureDeepReview.pdf). Nature, 521(7553):436-444, May 2015.
+  [2]: Olga Russakovsky et al. [ImageNet Large Scale Visual Recognition Challenge](https://arxiv.org/abs/1409.0575). International Journal of Computer Vision (IJCV), 115(3):211-252, 2015.
 dates:
   created: '2019-01-01'
   updated: '2024-08-12'
@@ -13,16 +22,15 @@ links:
   training_data: null
   citation: http://digital.csic.es/handle/10261/194498
 tags:
-- tensorflow
-- docker
-- deep learning
-- trainable
-- inference
-- pre-trained
-- image classification
-- api-v2
-- general purpose
-tasks: []
-categories: []
+  - deep learning
+tasks:
+  - Computer Vision
+categories:
+  - AI4 trainable
+  - AI4 pre trained
+  - AI4 inference
 libraries:
-- TensorFlow
+  - TensorFlow
+  - Keras
+data-type:
+  - Image
