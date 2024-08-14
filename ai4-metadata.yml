@@ -6,7 +6,7 @@ description: |-
   This Docker container contains the tools to train an image classifier on your personal dataset. It is a highly customizable tool that let's you choose between tens of different [top performing architectures](https://github.com/keras-team/keras-applications) and training parameters. 
   The container also comes with a pretrained general-purpose image classifier trained on ImageNet. 
   The PREDICT method expects an RGB image as input (or the url of an RGB image) and will return a JSON with the top 5 predictions.
-  <img class=''fit'', src=''https://raw.githubusercontent.com/ai4os-hub/ai4os-image-classification-tf/main/docs/images/imagenet.png''/>
+  <img class='fit', src='https://raw.githubusercontent.com/ai4os-hub/ai4os-image-classification-tf/main/docs/images/imagenet.png'/>
   
   **References**
   [1]: Yann LeCun, Yoshua Bengio, and Geofrey Hinton. [Deep learning](https://www.cs.toronto.edu/~hinton/absps/NatureDeepReview.pdf). Nature, 521(7553):436-444, May 2015.
@@ -23,8 +23,11 @@ links:
   citation: http://digital.csic.es/handle/10261/194498
 tags:
   - deep learning
+  - image classification
+  - vo.imagine-ai.eu
 tasks:
   - Computer Vision
+  - Classification
 categories:
   - AI4 trainable
   - AI4 pre trained
