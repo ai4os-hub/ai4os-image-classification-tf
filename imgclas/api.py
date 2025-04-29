@@ -28,6 +28,8 @@ from pathlib import Path
 import pkg_resources
 import re
 import warnings
+from aiohttp.web import HTTPException
+import logging
 
 import numpy as np
 import requests
@@ -37,8 +39,17 @@ from tensorflow.keras import backend as K
 from webargs import fields
 
 from imgclas import paths, utils, config, test_utils
-from imgclas.data_utils import load_class_names, load_class_info, mount_nextcloud
+from imgclas.data_utils import (
+    load_class_names,
+    load_class_info,
+    mount_nextcloud,
+)
 from imgclas.train_runfile import train_fn
+
+logger = logging.getLogger(__name__)
+ENV_LOG_LEVEL = os.getenv("API_LOG_LEVEL", default="INFO")
+LOG_LEVEL = getattr(logging, ENV_LOG_LEVEL.upper())
+logger.setLevel(LOG_LEVEL)
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -64,10 +75,18 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 
 # Empty model variables for inference (will be loaded the first time we perform inference)
 loaded_ts, loaded_ckpt = None, None
-graph, model, conf, class_names, class_info = None, None, None, None, None
+graph, model, conf, class_names, class_info = (
+    None,
+    None,
+    None,
+    None,
+    None,
+)
 
 # Additional parameters
-allowed_extensions = set(['png', 'jpg', 'jpeg', 'PNG', 'JPG', 'JPEG']) # allow only certain file extensions
+allowed_extensions = set(
+    ["png", "jpg", "jpeg", "PNG", "JPG", "JPEG"]
+)  # allow only certain file extensions
 top_K = 5  # number of top classes predictions to return
 
 
@@ -91,58 +110,73 @@ def load_inference_model(timestamp=None, ckpt_name=None):
     if not timestamp_list:
         raise Exception(
             "You have no models in your `./models` folder to be used for inference. "
-            "Therefore the API can only be used for training.")
+            "Therefore the API can only be used for training."
+        )
     elif timestamp is None:
         timestamp = timestamp_list[-1]
     elif timestamp not in timestamp_list:
         raise ValueError(
-            "Invalid timestamp name: {}. Available timestamp names are: {}".format(timestamp, timestamp_list))
+            "Invalid timestamp name: {}. Available timestamp names are: {}".format(
+                timestamp, timestamp_list
+            )
+        )
     paths.timestamp = timestamp
-    print('Using TIMESTAMP={}'.format(timestamp))
+    print("Using TIMESTAMP={}".format(timestamp))
 
     # Set the checkpoint model to use to make the prediction
     ckpt_list = os.listdir(paths.get_checkpoints_dir())
-    ckpt_list = sorted([name for name in ckpt_list if name.endswith('.h5')])
+    ckpt_list = sorted(
+        [name for name in ckpt_list if name.endswith(".h5")]
+    )
     if not ckpt_list:
         raise Exception(
-            "You have no checkpoints in your `./models/{}/ckpts` folder to be used for inference. ".format(timestamp) +
-            "Therefore the API can only be used for training.")
+            "You have no checkpoints in your `./models/{}/ckpts` folder to be used for inference. ".format(
+                timestamp
+            )
+            + "Therefore the API can only be used for training."
+        )
     elif ckpt_name is None:
         ckpt_name = ckpt_list[-1]
     elif ckpt_name not in ckpt_list:
         raise ValueError(
-            "Invalid checkpoint name: {}. Available checkpoint names are: {}".format(ckpt_name, ckpt_list))
-    print('Using CKPT_NAME={}'.format(ckpt_name))
+            "Invalid checkpoint name: {}. Available checkpoint names are: {}".format(
+                ckpt_name, ckpt_list
+            )
+        )
+    print("Using CKPT_NAME={}".format(ckpt_name))
 
     # Clear the previous loaded model
-    K.clear_session()
-
+    tf.keras.backend.clear_session()
     # Load the class names and info
     splits_dir = paths.get_ts_splits_dir()
     class_names = load_class_names(splits_dir=splits_dir)
     class_info = None
-    if 'info.txt' in os.listdir(splits_dir):
+    if "info.txt" in os.listdir(splits_dir):
         class_info = load_class_info(splits_dir=splits_dir)
         if len(class_info) != len(class_names):
-            warnings.warn("""The 'classes.txt' file has a different length than the 'info.txt' file.
+            warnings.warn(
+                """The 'classes.txt' file has a different length than the 'info.txt' file.
             If a class has no information whatsoever you should leave that classes row empty or put a '-' symbol.
-            The API will run with no info until this is solved.""")
+            The API will run with no info until this is solved."""
+            )
             class_info = None
     if class_info is None:
-        class_info = ['' for _ in range(len(class_names))]
+        class_info = ["" for _ in range(len(class_names))]
 
     # Load training configuration
-    conf_path = os.path.join(paths.get_conf_dir(), 'conf.json')
+    conf_path = os.path.join(paths.get_conf_dir(), "conf.json")
     with open(conf_path) as f:
         conf = json.load(f)
         update_with_saved_conf(conf)
 
     # Load the model
-    model = load_model(os.path.join(paths.get_checkpoints_dir(), ckpt_name),
-                       custom_objects=utils.get_custom_objects())
-    graph = tf.get_default_graph()
+    model = load_model(
+        os.path.join(paths.get_checkpoints_dir(), ckpt_name),
+        custom_objects=utils.get_custom_objects(),
+        compile=False,
+        # Disable deserialization of training config
+    )
 
-    # Set the model as loaded
     loaded_ts = timestamp
     loaded_ckpt = ckpt_name
 
@@ -157,7 +191,7 @@ def update_with_saved_conf(saved_conf):
         if group in saved_conf.keys():
             for g_key, g_val in sorted(val.items()):
                 if g_key in saved_conf[group].keys():
-                    g_val['value'] = saved_conf[group][g_key]
+                    g_val["value"] = saved_conf[group][g_key]
 
     # Check and save the configuration
     config.check_conf(conf=CONF)
@@ -173,7 +207,7 @@ def update_with_query_conf(user_args):
     for group, val in sorted(CONF.items()):
         for g_key, g_val in sorted(val.items()):
             if g_key in user_args:
-                g_val['value'] = json.loads(user_args[g_key])
+                g_val["value"] = json.loads(user_args[g_key])
 
     # Check and save the configuration
     config.check_conf(conf=CONF)
@@ -185,11 +219,10 @@ def catch_error(f):
     def wrap(*args, **kwargs):
         try:
             pred = f(*args, **kwargs)
-            return {'status': 'OK',
-                    **pred}
+            return {"status": "OK", **pred}
         except Exception as e:
-            return {'status': 'error',
-                    'message': str(e)}
+            return {"status": "error", "message": str(e)}
+
     return wrap
 
 
@@ -197,37 +230,49 @@ def catch_url_error(url_list):
 
     # Error catch: Empty query
     if not url_list:
-        raise ValueError('Empty query')
+        raise ValueError("Empty query")
 
     for i in url_list:
-        if not i.startswith('data:image'):  # don't do the checks for base64 encoded images
+        if not i.startswith(
+            "data:image"
+        ):  # don't do the checks for base64 encoded images
 
             # Error catch: Inexistent url
             try:
-                url_type = requests.head(i).headers.get('content-type')
+                url_type = requests.head(i).headers.get(
+                    "content-type"
+                )
             except Exception:
-                raise ValueError("Failed url connection: "
-                                 "Check you wrote the url address correctly.")
+                raise ValueError(
+                    "Failed url connection: "
+                    "Check you wrote the url address correctly."
+                )
 
             # Error catch: Wrong formatted urls
-            if url_type.split('/')[0] != 'image':
-                raise ValueError("Url image format error: Some urls were not in image format. "
-                                 "Check you didn't uploaded a preview of the image rather than the image itself.")
+            if url_type.split("/")[0] != "image":
+                raise ValueError(
+                    "Url image format error: Some urls were not in image format. "
+                    "Check you didn't uploaded a preview of the image rather than the image itself."
+                )
 
 
 def catch_localfile_error(file_list):
 
     # Error catch: Empty query
     if not file_list:
-        raise ValueError('Empty query')
+        raise ValueError("Empty query")
 
     # Error catch: Image format error
     for f in file_list:
-        extension = os.path.basename(f.content_type).split('/')[-1]
+        extension = os.path.basename(f.content_type).split("/")[-1]
         # extension = mimetypes.guess_extension(f.content_type)
         if extension not in allowed_extensions:
-            raise ValueError("Local image format error: "
-                             "At least one file is not in a standard image format ({}).".format(allowed_extensions))
+            raise ValueError(
+                "Local image format error: "
+                "At least one file is not in a standard image format ({}).".format(
+                    allowed_extensions
+                )
+            )
 
 
 def warm():
@@ -240,15 +285,20 @@ def warm():
 @catch_error
 def predict(**args):
 
-    if (not any([args['urls'], args['files']]) or
-            all([args['urls'], args['files']])):
-        raise Exception("You must provide either 'url' or 'data' in the payload")
+    if not any([args["urls"], args["files"]]) or all(
+        [args["urls"], args["files"]]
+    ):
+        raise Exception(
+            "You must provide either 'url' or 'data' in the payload"
+        )
 
-    if args['files']:
-        args['files'] = [args['files']]  # patch until list is available
+    if args["files"]:
+        args["files"] = [
+            args["files"]
+        ]  # patch until list is available
         return predict_data(args)
-    elif args['urls']:
-        args['urls'] = [args['urls']]  # patch until list is available
+    elif args["urls"]:
+        args["urls"] = [args["urls"]]  # patch until list is available
         return predict_url(args)
 
 
@@ -261,26 +311,35 @@ def predict_url(args):
     conf = config.conf_dict
 
     merge = True
-    catch_url_error(args['urls'])
+    catch_url_error(args["urls"])
 
     # Load model if needed
-    if loaded_ts != conf['testing']['timestamp'] or loaded_ckpt != conf['testing']['ckpt_name']:
-        load_inference_model(timestamp=conf['testing']['timestamp'],
-                             ckpt_name=conf['testing']['ckpt_name'])
+    if (
+        loaded_ts != conf["testing"]["timestamp"]
+        or loaded_ckpt != conf["testing"]["ckpt_name"]
+    ):
+        load_inference_model(
+            timestamp=conf["testing"]["timestamp"],
+            ckpt_name=conf["testing"]["ckpt_name"],
+        )
         conf = config.conf_dict
 
     # Make the predictions
-    with graph.as_default():
-        pred_lab, pred_prob = test_utils.predict(model=model,
-                                                 X=args['urls'],
-                                                 conf=conf,
-                                                 top_K=top_K,
-                                                 filemode='url',
-                                                 merge=merge,
-                                                 use_multiprocessing=False)  # safer to avoid memory fragmentation in failed queries
+    #with graph.as_default():
+    pred_lab, pred_prob = test_utils.predict(
+        model=model,
+        X=args["urls"],
+        conf=conf,
+        top_K=top_K,
+        filemode="url",
+        merge=merge,
+        use_multiprocessing=False,
+    )  # safer to avoid memory fragmentation in failed queries
 
     if merge:
-        pred_lab, pred_prob = np.squeeze(pred_lab), np.squeeze(pred_prob)
+        pred_lab, pred_prob = np.squeeze(pred_lab), np.squeeze(
+            pred_prob
+        )
 
     return format_prediction(pred_lab, pred_prob)
 
@@ -290,50 +349,66 @@ def predict_data(args):
     Function to predict an image in binary format
     """
     # Check user configuration
-    update_with_query_conf(args)
-    conf = config.conf_dict
+    logger.debug("Predict with args: %s", args)
+    try:
 
-    merge = True
-    catch_localfile_error(args['files'])
-
-    # Load model if needed
-    if loaded_ts != conf['testing']['timestamp'] or loaded_ckpt != conf['testing']['ckpt_name']:
-        load_inference_model(timestamp=conf['testing']['timestamp'],
-                             ckpt_name=conf['testing']['ckpt_name'])
+        update_with_query_conf(args)
         conf = config.conf_dict
 
-    # Create a list with the path to the images
-    filenames = [f.filename for f in args['files']]
+        merge = True
+        catch_localfile_error(args["files"])
 
-    # Make the predictions
-    try:
-        with graph.as_default():
-            pred_lab, pred_prob = test_utils.predict(model=model,
-                                                     X=filenames,
-                                                     conf=conf,
-                                                     top_K=top_K,
-                                                     filemode='local',
-                                                     merge=merge,
-                                                     use_multiprocessing=False)  # safer to avoid memory fragmentation in failed queries
-    finally:
-        for f in filenames:
-            os.remove(f)
+        if (
+            loaded_ts != conf["testing"]["timestamp"]
+            or loaded_ckpt != conf["testing"]["ckpt_name"]
+        ):
+            load_inference_model(
+                timestamp=conf["testing"]["timestamp"],
+                ckpt_name=conf["testing"]["ckpt_name"],
+            )
+            conf = config.conf_dict
+        # Create a list with the path to the images
+        filenames = [f.filename for f in args["files"]]
+        print(filenames)
+        original_filenames = [
+            f.original_filename for f in args["files"]
+        ]
 
-    if merge:
-        pred_lab, pred_prob = np.squeeze(pred_lab), np.squeeze(pred_prob)
+        # with graph.as_default():
+        print("before predicting")
+        pred_lab, pred_prob = test_utils.predict(
+            model=model,
+            X=filenames,
+            conf=conf,
+            top_K=top_K,
+            filemode="local",
+            merge=merge,
+            use_multiprocessing=False,
+        )
 
-    return format_prediction(pred_lab, pred_prob)
+        if merge:
+            pred_lab, pred_prob = np.squeeze(pred_lab), np.squeeze(
+                pred_prob
+            )
+            print(pred_lab.shape, pred_prob.shape)
+
+        return format_prediction(
+            pred_lab, pred_prob
+        )
+    except Exception as err:
+        raise HTTPException(reason=err) from err
 
 
 def format_prediction(labels, probabilities):
 
-    pred = {'labels': [class_names[i] for i in labels],
-            'probabilities': [float(p) for p in probabilities],
-            # 'labels_info': [class_info[i] for i in labels],
-            # 'links': {'Google Images': [image_link(class_names[i]) for i in labels],
-            #           'Wikipedia': [wikipedia_link(class_names[i]) for i in labels]
-            #           }
-            }
+    pred = {
+        "labels": [class_names[i] for i in labels],
+        "probabilities": [float(p) for p in probabilities],
+        # 'labels_info': [class_info[i] for i in labels],
+        # 'links': {'Google Images': [image_link(class_names[i]) for i in labels],
+        #           'Wikipedia': [wikipedia_link(class_names[i]) for i in labels]
+        #           }
+    }
 
     return pred
 
@@ -342,8 +417,8 @@ def image_link(pred_lab):
     """
     Return link to Google images
     """
-    base_url = 'https://www.google.es/search?'
-    params = {'tbm':'isch','q':pred_lab}
+    base_url = "https://www.google.es/search?"
+    params = {"tbm": "isch", "q": pred_lab}
     link = base_url + requests.compat.urlencode(params)
     return link
 
@@ -352,8 +427,8 @@ def wikipedia_link(pred_lab):
     """
     Return link to wikipedia webpage
     """
-    base_url = 'https://en.wikipedia.org/wiki/'
-    link = base_url + pred_lab.replace(' ', '_')
+    base_url = "https://en.wikipedia.org/wiki/"
+    link = base_url + pred_lab.replace(" ", "_")
     return link
 
 
@@ -363,18 +438,18 @@ def train(**args):
     """
     update_with_query_conf(user_args=args)
     CONF = config.conf_dict
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     config.print_conf_table(CONF)
     K.clear_session()  # remove the model loaded for prediction
     train_fn(TIMESTAMP=timestamp, CONF=CONF)
 
     # Sync with NextCloud folders (if NextCloud is available)
-    #try:
+    # try:
     #    mount_nextcloud(paths.get_models_dir(), 'rshare:/models')
-    #except Exception as e:
+    # except Exception as e:
     #    print(e)
 
-    return {'modelname': timestamp}
+    return {"modelname": timestamp}
 
 
 def populate_parser(parser, default_conf):
@@ -386,25 +461,37 @@ def populate_parser(parser, default_conf):
             gg_keys = g_val.keys()
 
             # Load optional keys
-            help = g_val['help'] if ('help' in gg_keys) else ''
-            type = getattr(builtins, g_val['type']) if ('type' in gg_keys) else None
-            choices = g_val['choices'] if ('choices' in gg_keys) else None
+            help = g_val["help"] if ("help" in gg_keys) else ""
+            type = (
+                getattr(builtins, g_val["type"])
+                if ("type" in gg_keys)
+                else None
+            )
+            choices = (
+                g_val["choices"] if ("choices" in gg_keys) else None
+            )
 
             # Additional info in help string
-            help += '\n' + "<font color='#C5576B'> Group name: **{}**".format(str(group))
+            help += (
+                "\n"
+                + "<font color='#C5576B'> Group name: **{}**".format(
+                    str(group)
+                )
+            )
             if choices:
-                help += '\n' + "Choices: {}".format(str(choices))
+                help += "\n" + "Choices: {}".format(str(choices))
             if type:
-                help += '\n' + "Type: {}".format(g_val['type'])
+                help += "\n" + "Type: {}".format(g_val["type"])
             help += "</font>"
 
             # Create arg dict
-            opt_args = {'missing': json.dumps(g_val['value']),
-                        'description': help,
-                        'required': False,
-                        }
+            opt_args = {
+                "missing": json.dumps(g_val["value"]),
+                "description": help,
+                "required": False,
+            }
             if choices:
-                opt_args['enum'] = [json.dumps(i) for i in choices]
+                opt_args["enum"] = [json.dumps(i) for i in choices]
 
             parser[g_key] = fields.Str(**opt_args)
 
@@ -415,12 +502,16 @@ def get_train_args():
 
     parser = OrderedDict()
     default_conf = config.CONF
-    default_conf = OrderedDict([('general', default_conf['general']),
-                                ('model', default_conf['model']),
-                                ('training', default_conf['training']),
-                                ('monitor', default_conf['monitor']),
-                                ('dataset', default_conf['dataset']),
-                                ('augmentation', default_conf['augmentation'])])
+    default_conf = OrderedDict(
+        [
+            ("general", default_conf["general"]),
+            ("model", default_conf["model"]),
+            ("training", default_conf["training"]),
+            ("monitor", default_conf["monitor"]),
+            ("dataset", default_conf["dataset"]),
+            ("augmentation", default_conf["augmentation"]),
+        ]
+    )
 
     return populate_parser(parser, default_conf)
 
@@ -429,30 +520,34 @@ def get_predict_args():
 
     parser = OrderedDict()
     default_conf = config.CONF
-    default_conf = OrderedDict([('testing', default_conf['testing'])])
+    default_conf = OrderedDict([("testing", default_conf["testing"])])
 
     # Add options for modelname
-    timestamp = default_conf['testing']['timestamp']
+    timestamp = default_conf["testing"]["timestamp"]
     timestamp_list = next(os.walk(paths.get_models_dir()))[1]
     timestamp_list = sorted(timestamp_list)
     if not timestamp_list:
-        timestamp['value'] = ''
+        timestamp["value"] = ""
     else:
-        timestamp['value'] = timestamp_list[-1]
-        timestamp['choices'] = timestamp_list
+        timestamp["value"] = timestamp_list[-1]
+        timestamp["choices"] = timestamp_list
 
     # Add data and url fields
-    parser['files'] = fields.Field(required=False,
-                                   missing=None,
-                                   type="file",
-                                   data_key="data",
-                                   location="form",
-                                   description="Select the image you want to classify.")
+    parser["files"] = fields.Field(
+        required=False,
+        missing=None,
+        type="file",
+        data_key="data",
+        location="form",
+        description="Select the image you want to classify.",
+    )
 
     # Use field.String instead of field.Url because I also want to allow uploading of base 64 encoded data strings
-    parser['urls'] = fields.String(required=False,
-                                   missing=None,
-                                   description="Select an URL of the image you want to classify.")
+    parser["urls"] = fields.String(
+        required=False,
+        missing=None,
+        description="Select an URL of the image you want to classify.",
+    )
 
     # missing action="append" --> append more than one url
 
@@ -464,7 +559,9 @@ def get_metadata():
     DO NOT REMOVE - All modules should have a get_metadata() function
     with appropriate keys.
     """
-    distros = list(pkg_resources.find_distributions(str(BASE_DIR), only=True))
+    distros = list(
+        pkg_resources.find_distributions(str(BASE_DIR), only=True)
+    )
     if len(distros) == 0:
         raise Exception("No package found.")
     pkg = distros[0]  # if several select first
@@ -480,13 +577,16 @@ def get_metadata():
     }
     meta = {}
     for line in pkg.get_metadata_lines("PKG-INFO"):
-        line_low = line.lower()  # to avoid inconsistency due to letter cases
+        line_low = (
+            line.lower()
+        )  # to avoid inconsistency due to letter cases
         for k in meta_fields:
             if line_low.startswith(k + ":"):
                 _, value = line.split(": ", 1)
                 meta[k] = value
 
     return meta
+
 
 schema = {
     "status": fields.Str(),
@@ -496,3 +596,6 @@ schema = {
     # "labels_info": fields.List(fields.Str()),
     # "links": fields.Dict(),
 }
+
+if __name__ == "__main__":
+    load_inference_model("2025-04-28_150855", "final_model.h5")
