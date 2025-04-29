@@ -369,10 +369,10 @@ def train(**args):
     train_fn(TIMESTAMP=timestamp, CONF=CONF)
 
     # Sync with NextCloud folders (if NextCloud is available)
-    try:
-        mount_nextcloud(paths.get_models_dir(), 'rshare:/models')
-    except Exception as e:
-        print(e)
+    #try:
+    #    mount_nextcloud(paths.get_models_dir(), 'rshare:/models')
+    #except Exception as e:
+    #    print(e)
 
     return {'modelname': timestamp}
 
