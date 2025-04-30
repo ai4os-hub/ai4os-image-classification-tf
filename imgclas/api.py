@@ -559,33 +559,19 @@ def get_metadata():
     DO NOT REMOVE - All modules should have a get_metadata() function
     with appropriate keys.
     """
-    distros = list(
-        pkg_resources.find_distributions(str(BASE_DIR), only=True)
-    )
-    if len(distros) == 0:
-        raise Exception("No package found.")
-    pkg = distros[0]  # if several select first
+    
+    metadata = {
+         "name": config.MODEL_METADATA.get("name"),
+            "author": config.MODEL_METADATA.get("authors"),
+            "author-email": config.MODEL_METADATA.get("author-emails"),
+            "summary": config.MODEL_METADATA.get("summary"),
+            "license": config.MODEL_METADATA.get("license"),
+            "version": config.MODEL_METADATA.get("version"),
+            "home-page": config.MODEL_METADATA.get("homepage"),
+        }
+    print(config.MODEL_METADATA.keys())
 
-    meta_fields = {
-        "name": None,
-        "version": None,
-        "summary": None,
-        "home-page": None,
-        "author": None,
-        "author-email": None,
-        "license": None,
-    }
-    meta = {}
-    for line in pkg.get_metadata_lines("PKG-INFO"):
-        line_low = (
-            line.lower()
-        )  # to avoid inconsistency due to letter cases
-        for k in meta_fields:
-            if line_low.startswith(k + ":"):
-                _, value = line.split(": ", 1)
-                meta[k] = value
-
-    return meta
+    return metadata
 
 
 schema = {
