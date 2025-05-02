@@ -30,4 +30,4 @@ environment:
   JPL_DOCKERFORCEBUILD: "True"
 
 
-timeout: 600
+timeout: 1200
