@@ -27,7 +27,7 @@ sqa_criteria:
 
 environment:
   LANG: C.UTF-8
-  JPL_DOCKERFORCEBUILD: "True"
+  #JPL_DOCKERFORCEBUILD: "True"
 
 
 timeout: 1200
