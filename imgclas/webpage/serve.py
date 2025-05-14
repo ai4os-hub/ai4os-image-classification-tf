@@ -22,7 +22,7 @@ References:
 
 import os
 
-from flask import Flask, render_template, request, send_from_directory, json, Response, flash, Markup
+from flask import Flask, render_template, request, send_from_directory, json, Response, flash, Markup, escape
 
 from imgclas import api
 from imgclas.webpage import webpage_utils
@@ -33,7 +33,7 @@ app = Flask(__name__)
 if os.path.isfile('secret_key.txt'):
     app.secret_key = open('secret_key.txt', 'r').read()
 else:
-    app.secret_key = 'devkey, should be in a file'
+    app.secret_key = 'devkey, should be in a file' #nsec
 
 # Load model
 if not api.loaded:
@@ -69,7 +69,7 @@ def url_post():
         message = api.predict_url(args, merge=True)
     except Exception as error:
         print(error)
-        flash(Markup(error))
+        flash(Markup("An error occurred: {}").format(escape(error)))
         code = error.code if hasattr(error, 'code') else 500
         return render_template('index.html'), code
 
@@ -86,7 +86,7 @@ def local_post():
         message = api.predict_data(args)
     except Exception as error:
         print(error)
-        flash(Markup(error))
+        flash(Markup("An error occurred: {}").format(escape(error)))
         code = error.code if hasattr(error, 'code') else 500
         return render_template('index.html'), code
 
@@ -118,13 +118,13 @@ def api_fn():
 
 @app.errorhandler(404)
 def page_not_found(e):
-    flash(Markup(e))
+    flash(Markup("An error occurred: {}").format(escape(e)))
     return render_template('index.html'), 404
 
 
 @app.errorhandler(405)
 def method_not_allowed(e):
-    flash(Markup(e))
+    flash(Markup("An error occurred: {}").format(escape(e)))
     return render_template('index.html'), 405
 
 

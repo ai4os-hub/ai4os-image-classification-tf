@@ -239,7 +239,7 @@ def catch_url_error(url_list):
 
             # Error catch: Inexistent url
             try:
-                url_type = requests.head(i).headers.get(
+                url_type = requests.head(i, timeout=10).headers.get(
                     "content-type"
                 )
             except Exception:
