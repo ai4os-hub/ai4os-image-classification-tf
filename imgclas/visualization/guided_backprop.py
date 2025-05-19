@@ -17,7 +17,6 @@
 import numpy as np
 
 import tensorflow as tf
-import tensorflow.keras.backend as K
 from tensorflow.keras.models import load_model
 
 from .saliency import SaliencyMask
@@ -35,62 +34,81 @@ class GuidedBackprop(SaliencyMask):
 
     GuidedReluRegistered = False
 
+
     def __init__(self, model, output_index=0, custom_loss=None):
-        """Constructs a GuidedBackprop SaliencyMask."""
-
-        if GuidedBackprop.GuidedReluRegistered is False:
-            @tf.RegisterGradient("GuidedRelu")
-            def _GuidedReluGrad(op, grad):
-                gate_g = tf.cast(grad > 0, "float32")
-                gate_y = tf.cast(op.outputs[0] > 0, "float32")
-                return gate_y * gate_g * grad
-        GuidedBackprop.GuidedReluRegistered = True
-
         """
-            Create a dummy session to set the learning phase to 0 (test mode in keras) without
-            inteferring with the session in the original keras model. This is a workaround
-            for the problem that tf.gradients returns error with keras models that contains
-            Dropout or BatchNormalization.
+        Constructs a GuidedBackprop SaliencyMask.
 
-            Basic Idea: save keras model => create new keras model with learning phase set to 0 => save
-            the tensorflow graph => create new tensorflow graph with ReLU replaced by GuiededReLU.
+        Args:
+            model: A tf.keras.Model instance.
+            output_index: Index of the output neuron to compute gradients for.
+            custom_loss: (Optional) Custom loss function, if needed for loading.
         """
-        model.save('/tmp/gb_keras.h5') #nosec
-        with tf.Graph().as_default():
-            with tf.Session().as_default():
-                K.set_learning_phase(0)
+        self.output_index = output_index
 
-                ########### Added specifically for the imgclas package ################
-                custom_objects = get_custom_objects()
-                custom_objects.update({"custom_loss":custom_loss}) #original custom dict
-                #######################################################################
+        # Define the custom GuidedReLU activation using @tf.custom_gradient
+        @tf.custom_gradient
+        def guided_relu(x):
+            def grad(dy):
+                gate_f = tf.cast(x > 0, dtype=dy.dtype)
+                gate_r = tf.cast(dy > 0, dtype=dy.dtype)
+                return dy * gate_f * gate_r
+            return tf.nn.relu(x), grad
 
-                load_model('/tmp/gb_keras.h5', custom_objects=custom_objects) #nosec
-                session = K.get_session()
-                tf.train.export_meta_graph()
+        # Function to replace relu activations with guided_relu
+        def replace_relu(layer):
+            if hasattr(layer, "activation") and layer.activation == tf.keras.activations.relu:
+                layer.activation = guided_relu
+            return layer
 
-                saver = tf.train.Saver()
-                saver.save(session, '/tmp/guided_backprop_ckpt') #nosec
+        # Clone the model, swapping out relu for guided_relu
+        self.guided_model = tf.keras.models.clone_model(model, clone_function=replace_relu)
+        self.guided_model.set_weights(model.get_weights())
 
-        self.guided_graph = tf.Graph()
-        with self.guided_graph.as_default():
-            self.guided_sess = tf.Session(graph = self.guided_graph)
+    def get_mask(self, input_image):
+        """
+        Computes the guided backpropagation saliency mask for a given input image.
 
-            with self.guided_graph.gradient_override_map({'Relu': 'GuidedRelu'}):
-                saver = tf.train.import_meta_graph('/tmp/guided_backprop_ckpt.meta') #nosec
-                saver.restore(self.guided_sess, '/tmp/guided_backprop_ckpt')  #nosec
+        Args:
+            input_image: Input image as a NumPy array (H, W, C) or (H, W, ...).
 
-                self.imported_y = self.guided_graph.get_tensor_by_name(model.output.name)[0][output_index]
-                self.imported_x = self.guided_graph.get_tensor_by_name(model.input.name)
+        Returns:
+            A NumPy array of the same shape as input_image with the guided gradients.
+        """
+        # Add batch dimension and ensure float32 dtype
+        x_value = np.expand_dims(input_image, axis=0).astype(np.float32)
+        x_tensor = tf.convert_to_tensor(x_value)
 
-                self.guided_grads_node = tf.gradients(self.imported_y, self.imported_x)
+        with tf.GradientTape() as tape:
+            tape.watch(x_tensor)
+            outputs = self.guided_model(x_tensor, training=False)
+            # Handle multi-output models
+            if isinstance(outputs, (list, tuple)):
+                output = outputs[0]
+            else:
+                output = outputs
+            # Compute loss for the selected output index
+            loss = output[:, self.output_index]
+        gradients = tape.gradient(loss, x_tensor)
+        return gradients[0].numpy()
+
 
     def get_mask(self, input_image):
         """Returns a GuidedBackprop mask."""
-        x_value = np.expand_dims(input_image, axis=0)
-        guided_feed_dict = {}
-        guided_feed_dict[self.imported_x] = x_value
+        import numpy as np
+        import tensorflow as tf
 
-        gradients = self.guided_sess.run(self.guided_grads_node, feed_dict = guided_feed_dict)[0][0]
+        # Add batch dimension and ensure float32 dtype
+        x_value = np.expand_dims(input_image, axis=0).astype(np.float32)
+        x_tensor = tf.convert_to_tensor(x_value)
 
-        return gradients
+        with tf.GradientTape() as tape:
+            tape.watch(x_tensor)
+            outputs = self.guided_model(x_tensor, training=False)
+            if isinstance(outputs, (list, tuple)):
+                output = outputs[0]
+            else:
+                output = outputs
+            loss = output[:, self.output_index]
+        gradients = tape.gradient(loss, x_tensor)
+        return gradients[0].numpy()

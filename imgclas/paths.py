@@ -36,7 +36,7 @@ def get_images_dir():
 
 
 def get_splits_dir():
-    return os.path.join(get_base_dir(), "data", "dataset_files")
+    return os.path.join(get_base_dir(), "data", "demo-dataset_files")
 
 
 def get_models_dir():
@@ -64,7 +64,7 @@ def get_stats_dir():
 
 
 def get_ts_splits_dir():
-    return os.path.join(get_timestamped_dir(), "dataset_files")
+    return os.path.join(get_timestamped_dir(), "demo-dataset_files")
 
 
 def get_predictions_dir():

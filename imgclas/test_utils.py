@@ -12,7 +12,16 @@ import numpy as np
 from imgclas.data_utils import k_crop_data_sequence
 
 
-def predict(model, X, conf, top_K=None, crop_num=10, filemode='local', merge=False, use_multiprocessing=False):
+def predict(
+    model,
+    X,
+    conf,
+    top_K=None,
+    crop_num=10,
+    filemode="local",
+    merge=False,
+    use_multiprocessing=False,
+):
     """
     Predict function.
 
@@ -46,40 +55,58 @@ def predict(model, X, conf, top_K=None, crop_num=10, filemode='local', merge=Fal
     """
 
     if top_K is None:
-        top_K = conf['model']['num_classes']
-    if type(X) is str: #if not isinstance(X, list):
+        top_K = conf["model"]["num_classes"]
+    if type(X) is str:  # if not isinstance(X, list):
         X = [X]
 
-    data_gen = k_crop_data_sequence(inputs=X,
-                                    im_size=conf['model']['image_size'],
-                                    mean_RGB=conf['dataset']['mean_RGB'],
-                                    std_RGB=conf['dataset']['std_RGB'],
-                                    preprocess_mode=conf['model']['preprocess_mode'],
-                                    aug_params=conf['augmentation']['val_mode'],
-                                    crop_mode='random',
-                                    crop_number=crop_num,
-                                    filemode=filemode)
+    data_gen = k_crop_data_sequence(
+        inputs=X,
+        im_size=conf["model"]["image_size"],
+        mean_RGB=conf["dataset"]["mean_RGB"],
+        std_RGB=conf["dataset"]["std_RGB"],
+        preprocess_mode=conf["model"]["preprocess_mode"],
+        aug_params=conf["augmentation"]["val_mode"],
+        crop_mode="random",
+        crop_number=crop_num,
+        filemode=filemode,
+    )
 
-    output = model.predict(data_gen,
-                           verbose=1,
-                           max_queue_size=10,
-                           workers=4,
-                           use_multiprocessing=use_multiprocessing)
+    output = model.predict(
+        data_gen,
+        verbose=1,
+        #max_queue_size=10,
+        #workers=4,
+        #use_multiprocessing=use_multiprocessing,
+    )
 
-    output = output.reshape(len(X), -1, output.shape[-1])  # reshape to (N, crop_number, num_classes)
+    output = output.reshape(
+        len(X), -1, output.shape[-1]
+    )  # reshape to (N, crop_number, num_classes)
     output = np.mean(output, axis=1)  # take the mean across the crops
 
     if merge:
-        output = np.mean(output, axis=0)  # take the mean across the images
-        lab = np.argsort(output)[::-1]  # sort labels in descending prob
+        output = np.mean(
+            output, axis=0
+        )  # take the mean across the images
+        lab = np.argsort(output)[
+            ::-1
+        ]  # sort labels in descending prob
         lab = lab[:top_K]  # keep only top_K labels
-        lab = np.expand_dims(lab, axis=0)  # add extra dimension to make to output have a shape (1, top_k)
+        lab = np.expand_dims(
+            lab, axis=0
+        )  # add extra dimension to make to output have a shape (1, top_k)
         prob = output[lab]
     else:
-        lab = np.argsort(output, axis=1)[:, ::-1]  # sort labels in descending prob
+        lab = np.argsort(output, axis=1)[
+            :, ::-1
+        ]  # sort labels in descending prob
         lab = lab[:, :top_K]  # keep only top_K labels
-        prob = output[np.repeat(np.arange(len(lab)), lab.shape[1]),
-                      lab.flatten()].reshape(lab.shape)  # retrieve corresponding probabilities
+        prob = output[
+            np.repeat(np.arange(len(lab)), lab.shape[1]),
+            lab.flatten(),
+        ].reshape(
+            lab.shape
+        )  # retrieve corresponding probabilities
 
     return lab, prob
 
@@ -97,6 +124,8 @@ def topK_accuracy(true_lab, pred_lab, K=1):
     K: int
         Accuracy type to compute
     """
-    assert K<= pred_lab.shape[1], 'K is bigger than your number of predictions' #nosec
+    assert (
+        K <= pred_lab.shape[1]
+    ), "K is bigger than your number of predictions"  # nosec
     mask = [lab in pred_lab[i, :K] for i, lab in enumerate(true_lab)]
     return np.mean(mask)
