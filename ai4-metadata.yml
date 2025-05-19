@@ -27,6 +27,7 @@ links:
   dataset: http://www.image-net.org/challenges/LSVRC/
   training_data: null
   citation: http://digital.csic.es/handle/10261/194498
+  weights: https://api.cloud.ifca.es:8080/swift/v1/imagenet-tf/default_imagenet.tar.xz
 tags:
   - deep learning
   - image classification
