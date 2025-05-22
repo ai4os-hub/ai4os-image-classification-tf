@@ -28,6 +28,7 @@ import time
 import json
 from datetime import datetime
 
+import mlflow
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
@@ -180,6 +181,26 @@ def train_fn(TIMESTAMP, CONF):
     # print('Saving the model to protobuf...')
     # fpath = os.path.join(paths.get_checkpoints_dir(), 'final_model.proto')
     # model_utils.save_to_pb(model, fpath)
+
+    # Save to Mlflow
+    mlflow_vars = [v in os.environ for v in ["MLFLOW_TRACKING_USERNAME", "MLFLOW_TRACKING_PASSWORD", "MLFLOW_TRACKING_URI"]]
+    use_mlflow = all(mlflow_vars)
+    if use_mlflow:
+        experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "ai4os-image-classification-tf")
+        mlflow.set_experiment(experiment_name=experiment_name)
+        _ = mlflow.start_run(run_name=TIMESTAMP)
+        mlflow.log_params({
+            "epochs": len(stats["epoch"]),
+            "training_time": stats["training time (s)"],
+            })
+        for epoch in range(len(stats["epoch"])):
+            mlflow.log_metric("train_loss", stats["loss"][epoch], step=epoch)
+            mlflow.log_metric("train_accuracy", stats["acc"][epoch], step=epoch)
+            mlflow.log_metric("learning_rate", stats["lr"][epoch], step=epoch)
+            if CONF['training']['use_validation']:
+                mlflow.log_metric("val_loss", stats["val_loss"][epoch], step=epoch)
+                mlflow.log_metric("val_accuracy", stats["val_acc"][epoch], step=epoch)
+        mlflow.end_run()
 
     print('Finished')
 

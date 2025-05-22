@@ -27,6 +27,7 @@ webargs~=5.5.3
 aiohttp~=3.8.1
 deepaas>=1.3.0,<3.0
 flaat~=0.8.0
+mlflow-skinny~=1.23.1
 
 # Below is the old content of requirements.txt
 #
